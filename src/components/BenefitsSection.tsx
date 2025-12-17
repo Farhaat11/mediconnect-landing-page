@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Clock, Users, Shield, TrendingUp, HeartPulse, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -115,8 +116,8 @@ const BenefitsSection = () => {
               exceptional patient care.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="lg">
-                Start Free Trial
+              <Button variant="hero" size="lg" asChild>
+                <Link to="/appointments">Start Free Trial</Link>
               </Button>
               <Button variant="heroOutline" size="lg">
                 Schedule Demo

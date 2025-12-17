@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Heart, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
 
 const Footer = () => {
@@ -42,14 +43,14 @@ const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-12 pb-12 border-b border-primary-foreground/10">
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
-            <a href="#home" className="flex items-center gap-2 mb-6">
+            <Link to="/" className="flex items-center gap-2 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                 <Heart className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold">
                 Medi<span className="text-primary">Connect</span>
               </span>
-            </a>
+            </Link>
             <p className="text-primary-foreground/70 mb-6 max-w-sm">
               Empowering healthcare providers with smart technology to deliver 
               exceptional patient care and streamline operations.
