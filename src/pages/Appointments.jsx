@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header.jsx";
 import Footer from "@/components/Footer.jsx";
 import { Button } from "@/components/ui/button.jsx";
-import { Calendar } from "lucide-react";
+import { Calendar, ClipboardList } from "lucide-react";
 import PersonalInfoSection from "@/components/appointments/PersonalInfoSection.jsx";
 import DoctorSelectSection from "@/components/appointments/DoctorSelectSection.jsx";
 import AppointmentDetailsSection from "@/components/appointments/AppointmentDetailsSection.jsx";
 import AppointmentConfirmation from "@/components/appointments/AppointmentConfirmation.jsx";
+import MyAppointments from "@/components/appointments/MyAppointments.jsx";
 import { specializations, doctorsBySpecialization, timeSlots, generateAppointmentNumber } from "@/data/appointmentData.js";
 import { validateForm, isFormValid } from "@/utils/validation.js";
+import { saveAppointment, getUpcomingAppointments } from "@/utils/localStorage.js";
 
 const initialFormState = {
   patientName: "",
@@ -29,6 +31,15 @@ const Appointments = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [confirmationData, setConfirmationData] = useState(null);
   const [availableDoctors, setAvailableDoctors] = useState([]);
+  const [activeTab, setActiveTab] = useState("book");
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+
+  // Load upcoming appointments on mount and when tab changes
+  useEffect(() => {
+    if (activeTab === "my-appointments") {
+      setUpcomingAppointments(getUpcomingAppointments());
+    }
+  }, [activeTab]);
 
   // Update doctors when specialization changes
   useEffect(() => {
@@ -75,9 +86,30 @@ const Appointments = () => {
     }
 
     const selectedDoctor = availableDoctors.find((d) => d.id === formData.doctor);
+    const appointmentId = generateAppointmentNumber();
+
+    // Create appointment object for localStorage
+    const appointmentToSave = {
+      id: appointmentId,
+      patientName: formData.patientName,
+      phone: formData.phone,
+      email: formData.email,
+      age: formData.age,
+      specialization: formData.specialization,
+      doctorId: formData.doctor,
+      doctorName: selectedDoctor?.name || "",
+      appointmentDate: formData.appointmentDate,
+      appointmentTime: formData.appointmentTime,
+      consultationMode: formData.consultationMode,
+      status: "Scheduled",
+      createdAt: new Date().toISOString(),
+    };
+
+    // Save to localStorage
+    saveAppointment(appointmentToSave);
 
     setConfirmationData({
-      appointmentNumber: generateAppointmentNumber(),
+      appointmentNumber: appointmentId,
       patientName: formData.patientName,
       doctorName: selectedDoctor?.name || "",
       date: formatDate(formData.appointmentDate),
@@ -109,7 +141,7 @@ const Appointments = () => {
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Page Header */}
-          <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="text-center max-w-3xl mx-auto mb-8">
             <div className="inline-flex items-center gap-2 bg-primary-light px-4 py-2 rounded-full mb-6">
               <Calendar className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-primary">Book Your Visit</span>
@@ -122,46 +154,79 @@ const Appointments = () => {
             </p>
           </div>
 
-          {!isSubmitted ? (
-            <div className="max-w-3xl mx-auto">
-              <form onSubmit={handleSubmit} className="bg-card rounded-3xl shadow-elevated border border-border/50 p-6 sm:p-10">
-                <div className="grid gap-8">
-                  <PersonalInfoSection
-                    formData={formData}
-                    errors={visibleErrors}
-                    onChange={handleChange}
-                  />
-
-                  <div className="border-t border-border" />
-
-                  <DoctorSelectSection
-                    formData={formData}
-                    errors={visibleErrors}
-                    onChange={handleChange}
-                    specializations={specializations}
-                    availableDoctors={availableDoctors}
-                  />
-
-                  <div className="border-t border-border" />
-
-                  <AppointmentDetailsSection
-                    formData={formData}
-                    errors={visibleErrors}
-                    onChange={handleChange}
-                    timeSlots={timeSlots}
-                  />
-
-                  <Button type="submit" size="lg" className="w-full" disabled={!formIsValid}>
-                    Book Appointment
-                  </Button>
-                </div>
-              </form>
+          {/* Tabs */}
+          <div className="max-w-3xl mx-auto mb-8">
+            <div className="flex bg-muted rounded-xl p-1">
+              <button
+                onClick={() => { setActiveTab("book"); setIsSubmitted(false); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
+                  activeTab === "book"
+                    ? "bg-card text-foreground shadow-soft"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                Book Appointment
+              </button>
+              <button
+                onClick={() => setActiveTab("my-appointments")}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
+                  activeTab === "my-appointments"
+                    ? "bg-card text-foreground shadow-soft"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <ClipboardList className="w-4 h-4" />
+                My Appointments
+              </button>
             </div>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === "book" ? (
+            !isSubmitted ? (
+              <div className="max-w-3xl mx-auto">
+                <form onSubmit={handleSubmit} className="bg-card rounded-3xl shadow-elevated border border-border/50 p-6 sm:p-10">
+                  <div className="grid gap-8">
+                    <PersonalInfoSection
+                      formData={formData}
+                      errors={visibleErrors}
+                      onChange={handleChange}
+                    />
+
+                    <div className="border-t border-border" />
+
+                    <DoctorSelectSection
+                      formData={formData}
+                      errors={visibleErrors}
+                      onChange={handleChange}
+                      specializations={specializations}
+                      availableDoctors={availableDoctors}
+                    />
+
+                    <div className="border-t border-border" />
+
+                    <AppointmentDetailsSection
+                      formData={formData}
+                      errors={visibleErrors}
+                      onChange={handleChange}
+                      timeSlots={timeSlots}
+                    />
+
+                    <Button type="submit" size="lg" className="w-full" disabled={!formIsValid}>
+                      Book Appointment
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              <AppointmentConfirmation
+                confirmationData={confirmationData}
+                onNewAppointment={handleNewAppointment}
+              />
+            )
           ) : (
-            <AppointmentConfirmation
-              confirmationData={confirmationData}
-              onNewAppointment={handleNewAppointment}
-            />
+            <MyAppointments appointments={upcomingAppointments} />
           )}
         </div>
       </main>
