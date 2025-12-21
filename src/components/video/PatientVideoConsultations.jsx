@@ -12,7 +12,7 @@ const PatientVideoConsultations = ({ consultations, onJoinCall }) => {
     });
   };
 
-  const isJoinable = (apt) => {
+  const isBeforeScheduledTime = (apt) => {
     const now = new Date();
     const aptDate = new Date(apt.appointmentDate);
     const [hours, minutes] = apt.appointmentTime.split(':');
@@ -23,11 +23,7 @@ const PatientVideoConsultations = ({ consultations, onJoinCall }) => {
     
     aptDate.setHours(hour, parseInt(minutes) || 0, 0, 0);
     
-    // Allow joining 10 minutes before to 30 minutes after scheduled time
-    const joinWindowStart = new Date(aptDate.getTime() - 10 * 60 * 1000);
-    const joinWindowEnd = new Date(aptDate.getTime() + 30 * 60 * 1000);
-    
-    return now >= joinWindowStart && now <= joinWindowEnd;
+    return now < aptDate;
   };
 
   const getTimeStatus = (apt) => {
@@ -70,7 +66,7 @@ const PatientVideoConsultations = ({ consultations, onJoinCall }) => {
       <div className="space-y-4">
         {consultations.map((apt) => {
           const timeStatus = getTimeStatus(apt);
-          const canJoin = isJoinable(apt);
+          const isEarly = isBeforeScheduledTime(apt);
           
           return (
             <div
@@ -121,16 +117,15 @@ const PatientVideoConsultations = ({ consultations, onJoinCall }) => {
 
                 <div className="lg:border-l lg:border-border lg:pl-4 flex flex-col gap-2">
                   <Button 
-                    onClick={() => onJoinCall(apt)}
+                    onClick={() => onJoinCall(apt, isEarly)}
                     className="w-full lg:w-auto gap-2"
-                    disabled={!canJoin}
                   >
                     <Video className="w-4 h-4" />
-                    {canJoin ? "Join Call" : "Not Yet"}
+                    {isEarly ? "Join Waiting Room" : "Join Call"}
                   </Button>
-                  {!canJoin && (
+                  {isEarly && (
                     <p className="text-xs text-muted-foreground text-center">
-                      Available at scheduled time
+                      You'll wait until doctor joins
                     </p>
                   )}
                 </div>

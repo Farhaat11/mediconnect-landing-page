@@ -12,22 +12,26 @@ const VideoConsultation = () => {
   const [activeTab, setActiveTab] = useState("patient");
   const [inCall, setInCall] = useState(false);
   const [activeConsultation, setActiveConsultation] = useState(null);
+  const [isWaitingRoom, setIsWaitingRoom] = useState(false);
 
   const videoConsultations = getVideoConsultations();
 
-  const handleJoinCall = (consultation) => {
+  const handleJoinCall = (consultation, isEarly = false) => {
     setActiveConsultation(consultation);
+    setIsWaitingRoom(isEarly);
     setInCall(true);
   };
 
   const handleStartCall = (consultation) => {
     setActiveConsultation(consultation);
+    setIsWaitingRoom(false);
     setInCall(true);
   };
 
   const handleEndCall = () => {
     setInCall(false);
     setActiveConsultation(null);
+    setIsWaitingRoom(false);
   };
 
   const handleMarkComplete = (appointmentId) => {
@@ -42,6 +46,7 @@ const VideoConsultation = () => {
         userType={activeTab}
         onEndCall={handleEndCall}
         onMarkComplete={handleMarkComplete}
+        isWaitingRoom={isWaitingRoom}
       />
     );
   }
