@@ -6,26 +6,37 @@ import {
   MessageSquare, X, Send, FileText, CheckCircle, Calendar, Clock, Stethoscope
 } from "lucide-react";
 
-const VideoCallUI = ({ consultation, userType, onEndCall, onMarkComplete }) => {
+const VideoCallUI = ({ consultation, userType, onEndCall, onMarkComplete, isWaitingRoom = false }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
-  const [callStatus, setCallStatus] = useState("connecting");
+  const [callStatus, setCallStatus] = useState(isWaitingRoom ? "waiting" : "connecting");
   const [notes, setNotes] = useState("");
   const [messages, setMessages] = useState([
     { id: 1, sender: "system", text: "Chat started. Messages are simulated.", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
   ]);
   const [newMessage, setNewMessage] = useState("");
 
-  // Simulate connection
+  // Simulate connection or waiting room
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setCallStatus("in-call");
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (isWaitingRoom) {
+      // Simulate doctor joining after 5 seconds in waiting room
+      const timer = setTimeout(() => {
+        setCallStatus("connecting");
+        setTimeout(() => {
+          setCallStatus("in-call");
+        }, 2000);
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      const timer = setTimeout(() => {
+        setCallStatus("in-call");
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isWaitingRoom]);
 
   const otherPartyName = userType === "patient" 
     ? consultation.doctorName 
@@ -82,6 +93,13 @@ const VideoCallUI = ({ consultation, userType, onEndCall, onMarkComplete }) => {
 
   const getStatusIndicator = () => {
     switch (callStatus) {
+      case "waiting":
+        return (
+          <div className="flex items-center gap-2 text-blue-400">
+            <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+            Waiting Room
+          </div>
+        );
       case "connecting":
         return (
           <div className="flex items-center gap-2 text-yellow-400">
@@ -152,7 +170,31 @@ const VideoCallUI = ({ consultation, userType, onEndCall, onMarkComplete }) => {
         <div className={`flex-1 relative p-4 transition-all duration-300 ${isChatOpen || isNotesOpen ? 'pr-80' : ''}`}>
           {/* Remote Video / Screen Share (Large) */}
           <div className="w-full h-full bg-muted/20 rounded-2xl flex items-center justify-center overflow-hidden">
-            {callStatus === "connecting" ? (
+            {callStatus === "waiting" ? (
+              <div className="text-center max-w-md">
+                <div className="w-24 h-24 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-6">
+                  <Clock className="w-12 h-12 text-blue-400 animate-pulse" />
+                </div>
+                <h2 className="text-primary-foreground text-2xl font-bold mb-2">Waiting Room</h2>
+                <p className="text-primary-foreground/70 text-lg mb-4">
+                  Your appointment with {otherPartyName} hasn't started yet
+                </p>
+                <div className="bg-card/20 rounded-xl p-4 mb-6">
+                  <p className="text-primary-foreground/60 text-sm mb-2">Scheduled for</p>
+                  <p className="text-primary-foreground font-semibold">
+                    {formatDate(consultation.appointmentDate)} at {consultation.appointmentTime}
+                  </p>
+                </div>
+                <p className="text-primary-foreground/50 text-sm">
+                  Please wait here. The doctor will start the consultation shortly.
+                </p>
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            ) : callStatus === "connecting" ? (
               <div className="text-center">
                 <div className="w-20 h-20 rounded-full border-4 border-primary/30 border-t-primary animate-spin mx-auto mb-4" />
                 <p className="text-primary-foreground/70 text-lg">Connecting to {otherPartyName}...</p>
