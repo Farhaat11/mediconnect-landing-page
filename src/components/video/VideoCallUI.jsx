@@ -1,23 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, User, Monitor, MonitorOff, MessageSquare, X, Send } from "lucide-react";
+import { 
+  Mic, MicOff, Video, VideoOff, PhoneOff, User, Monitor, MonitorOff, 
+  MessageSquare, X, Send, FileText, CheckCircle, Calendar, Clock, Stethoscope
+} from "lucide-react";
 
-const VideoCallUI = ({ consultation, userType, onEndCall }) => {
+const VideoCallUI = ({ consultation, userType, onEndCall, onMarkComplete }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [callStatus, setCallStatus] = useState("connecting");
+  const [notes, setNotes] = useState("");
   const [messages, setMessages] = useState([
     { id: 1, sender: "system", text: "Chat started. Messages are simulated.", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
   ]);
   const [newMessage, setNewMessage] = useState("");
+
+  // Simulate connection
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCallStatus("in-call");
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const otherPartyName = userType === "patient" 
     ? consultation.doctorName 
     : consultation.patientName;
 
   const currentUserName = userType === "patient" ? "You" : "Dr. You";
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
@@ -32,7 +55,6 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
     setMessages(prev => [...prev, userMsg]);
     setNewMessage("");
 
-    // Simulate reply after 1.5s
     setTimeout(() => {
       const replyMsg = {
         id: messages.length + 2,
@@ -44,6 +66,48 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
     }, 1500);
   };
 
+  const handleEndCall = () => {
+    setCallStatus("ended");
+    setTimeout(() => {
+      onEndCall();
+    }, 1500);
+  };
+
+  const handleMarkComplete = () => {
+    if (onMarkComplete) {
+      onMarkComplete(consultation.id);
+    }
+    handleEndCall();
+  };
+
+  const getStatusIndicator = () => {
+    switch (callStatus) {
+      case "connecting":
+        return (
+          <div className="flex items-center gap-2 text-yellow-400">
+            <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+            Connecting...
+          </div>
+        );
+      case "in-call":
+        return (
+          <div className="flex items-center gap-2 text-green-400">
+            <span className="w-2 h-2 bg-green-400 rounded-full" />
+            In Call
+          </div>
+        );
+      case "ended":
+        return (
+          <div className="flex items-center gap-2 text-red-400">
+            <span className="w-2 h-2 bg-red-400 rounded-full" />
+            Call Ended
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-foreground z-50 flex flex-col">
       {/* Header */}
@@ -53,6 +117,7 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
           <p className="font-semibold">{otherPartyName}</p>
         </div>
         <div className="flex items-center gap-4">
+          {getStatusIndicator()}
           {isScreenSharing && (
             <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded-full">
               Screen Sharing
@@ -65,13 +130,43 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
         </div>
       </div>
 
+      {/* Appointment Info Banner */}
+      <div className="bg-primary/20 backdrop-blur-sm px-4 py-2 flex items-center justify-center gap-6 text-sm text-primary-foreground/80">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4" />
+          <span>{formatDate(consultation.appointmentDate)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4" />
+          <span>{consultation.appointmentTime}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Stethoscope className="w-4 h-4" />
+          <span>{consultation.specialization}</span>
+        </div>
+      </div>
+
       {/* Main Content Area */}
-      <div className="flex-1 flex relative">
+      <div className="flex-1 flex relative overflow-hidden">
         {/* Video Area */}
-        <div className={`flex-1 relative p-4 transition-all duration-300 ${isChatOpen ? 'pr-80' : ''}`}>
+        <div className={`flex-1 relative p-4 transition-all duration-300 ${isChatOpen || isNotesOpen ? 'pr-80' : ''}`}>
           {/* Remote Video / Screen Share (Large) */}
           <div className="w-full h-full bg-muted/20 rounded-2xl flex items-center justify-center overflow-hidden">
-            {isScreenSharing ? (
+            {callStatus === "connecting" ? (
+              <div className="text-center">
+                <div className="w-20 h-20 rounded-full border-4 border-primary/30 border-t-primary animate-spin mx-auto mb-4" />
+                <p className="text-primary-foreground/70 text-lg">Connecting to {otherPartyName}...</p>
+                <p className="text-primary-foreground/50 text-sm mt-2">Please wait</p>
+              </div>
+            ) : callStatus === "ended" ? (
+              <div className="text-center">
+                <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                  <PhoneOff className="w-10 h-10 text-red-400" />
+                </div>
+                <p className="text-primary-foreground/70 text-lg">Call Ended</p>
+                <p className="text-primary-foreground/50 text-sm mt-2">Redirecting...</p>
+              </div>
+            ) : isScreenSharing ? (
               <div className="w-full h-full bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center">
                 <div className="text-center">
                   <Monitor className="w-20 h-20 text-primary-foreground/30 mx-auto mb-4" />
@@ -93,13 +188,13 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
                   <User className="w-16 h-16 text-primary-foreground/50" />
                 </div>
                 <p className="text-primary-foreground/70 text-lg">{otherPartyName}</p>
-                <p className="text-primary-foreground/50 text-sm">Waiting to connect...</p>
+                <p className="text-primary-foreground/50 text-sm">Camera feed would appear here</p>
               </div>
             )}
           </div>
 
           {/* Local Video (Small - Picture in Picture) */}
-          <div className="absolute bottom-8 right-8 w-40 h-56 bg-muted/30 rounded-xl border-2 border-primary/30 overflow-hidden">
+          <div className="absolute bottom-8 right-8 w-40 h-56 bg-muted/30 rounded-xl border-2 border-primary/30 overflow-hidden shadow-elevated">
             {isCameraOn ? (
               <div className="w-full h-full flex items-center justify-center">
                 <div className="text-center">
@@ -122,7 +217,6 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
 
         {/* Chat Panel */}
         <div className={`absolute top-0 right-0 h-full w-80 bg-card/20 backdrop-blur-md border-l border-primary-foreground/10 flex flex-col transition-transform duration-300 ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-          {/* Chat Header */}
           <div className="p-4 border-b border-primary-foreground/10 flex items-center justify-between">
             <h3 className="text-primary-foreground font-semibold">Chat</h3>
             <Button
@@ -135,7 +229,6 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
             </Button>
           </div>
 
-          {/* Chat Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.map((msg) => (
               <div
@@ -168,7 +261,6 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
             ))}
           </div>
 
-          {/* Chat Input */}
           <div className="p-4 border-t border-primary-foreground/10">
             <form
               onSubmit={(e) => {
@@ -194,61 +286,109 @@ const VideoCallUI = ({ consultation, userType, onEndCall }) => {
             </form>
           </div>
         </div>
+
+        {/* Notes Panel (Doctor Only) */}
+        {userType === "doctor" && (
+          <div className={`absolute top-0 right-0 h-full w-80 bg-card/20 backdrop-blur-md border-l border-primary-foreground/10 flex flex-col transition-transform duration-300 ${isNotesOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className="p-4 border-b border-primary-foreground/10 flex items-center justify-between">
+              <h3 className="text-primary-foreground font-semibold">Consultation Notes</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => setIsNotesOpen(false)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="flex-1 p-4">
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Type consultation notes here..."
+                className="w-full h-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-xl p-4 text-primary-foreground placeholder:text-primary-foreground/40 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+
+            <div className="p-4 border-t border-primary-foreground/10 space-y-3">
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                onClick={handleMarkComplete}
+              >
+                <CheckCircle className="w-4 h-4" />
+                Mark as Completed
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Controls */}
       <div className="bg-card/10 backdrop-blur-sm p-6">
         <div className="flex items-center justify-center gap-4">
-          {/* Mute Button */}
           <Button
             variant={isMuted ? "destructive" : "secondary"}
             size="lg"
             className="w-14 h-14 rounded-full"
             onClick={() => setIsMuted(!isMuted)}
             title={isMuted ? "Unmute" : "Mute"}
+            disabled={callStatus !== "in-call"}
           >
             {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
           </Button>
 
-          {/* Camera Button */}
           <Button
             variant={!isCameraOn ? "destructive" : "secondary"}
             size="lg"
             className="w-14 h-14 rounded-full"
             onClick={() => setIsCameraOn(!isCameraOn)}
             title={isCameraOn ? "Turn off camera" : "Turn on camera"}
+            disabled={callStatus !== "in-call"}
           >
             {isCameraOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
           </Button>
 
-          {/* Screen Share Button */}
           <Button
             variant={isScreenSharing ? "default" : "secondary"}
             size="lg"
             className={`w-14 h-14 rounded-full ${isScreenSharing ? 'bg-accent hover:bg-accent/80' : ''}`}
             onClick={() => setIsScreenSharing(!isScreenSharing)}
             title={isScreenSharing ? "Stop sharing" : "Share screen"}
+            disabled={callStatus !== "in-call"}
           >
             {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
           </Button>
 
-          {/* Chat Button */}
           <Button
             variant={isChatOpen ? "default" : "secondary"}
             size="lg"
             className={`w-14 h-14 rounded-full ${isChatOpen ? 'bg-primary hover:bg-primary/80' : ''}`}
-            onClick={() => setIsChatOpen(!isChatOpen)}
+            onClick={() => { setIsChatOpen(!isChatOpen); setIsNotesOpen(false); }}
             title={isChatOpen ? "Close chat" : "Open chat"}
+            disabled={callStatus !== "in-call"}
           >
             <MessageSquare className="w-6 h-6" />
           </Button>
 
-          {/* End Call Button */}
+          {userType === "doctor" && (
+            <Button
+              variant={isNotesOpen ? "default" : "secondary"}
+              size="lg"
+              className={`w-14 h-14 rounded-full ${isNotesOpen ? 'bg-primary hover:bg-primary/80' : ''}`}
+              onClick={() => { setIsNotesOpen(!isNotesOpen); setIsChatOpen(false); }}
+              title={isNotesOpen ? "Close notes" : "Open notes"}
+              disabled={callStatus !== "in-call"}
+            >
+              <FileText className="w-6 h-6" />
+            </Button>
+          )}
+
           <Button
             variant="destructive"
             size="lg"
             className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700"
-            onClick={onEndCall}
+            onClick={handleEndCall}
             title="End call"
           >
             <PhoneOff className="w-7 h-7" />

@@ -8,9 +8,9 @@ import DoctorSelectSection from "@/components/appointments/DoctorSelectSection.j
 import AppointmentDetailsSection from "@/components/appointments/AppointmentDetailsSection.jsx";
 import AppointmentConfirmation from "@/components/appointments/AppointmentConfirmation.jsx";
 import MyAppointments from "@/components/appointments/MyAppointments.jsx";
-import { specializations, doctorsBySpecialization, timeSlots, generateAppointmentNumber } from "@/data/appointmentData.js";
+import { specializations, doctorsBySpecialization, timeSlots } from "@/data/appointmentData.js";
 import { validateForm, isFormValid } from "@/utils/validation.js";
-import { saveAppointment, getUpcomingAppointments } from "@/utils/localStorage.js";
+import { useAppointments } from "@/context/AppointmentContext.jsx";
 
 const initialFormState = {
   patientName: "",
@@ -25,6 +25,7 @@ const initialFormState = {
 };
 
 const Appointments = () => {
+  const { addAppointment, getUpcomingAppointments } = useAppointments();
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -34,12 +35,12 @@ const Appointments = () => {
   const [activeTab, setActiveTab] = useState("book");
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
 
-  // Load upcoming appointments on mount and when tab changes
+  // Load upcoming appointments when tab changes
   useEffect(() => {
     if (activeTab === "my-appointments") {
       setUpcomingAppointments(getUpcomingAppointments());
     }
-  }, [activeTab]);
+  }, [activeTab, getUpcomingAppointments]);
 
   // Update doctors when specialization changes
   useEffect(() => {
@@ -74,7 +75,6 @@ const Appointments = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Mark all fields as touched
     const allTouched = Object.keys(formData).reduce((acc, key) => ({ ...acc, [key]: true }), {});
     setTouched(allTouched);
 
@@ -86,11 +86,9 @@ const Appointments = () => {
     }
 
     const selectedDoctor = availableDoctors.find((d) => d.id === formData.doctor);
-    const appointmentId = generateAppointmentNumber();
 
-    // Create appointment object for localStorage
-    const appointmentToSave = {
-      id: appointmentId,
+    // Create appointment object for in-memory storage
+    const appointmentData = {
       patientName: formData.patientName,
       phone: formData.phone,
       email: formData.email,
@@ -101,15 +99,13 @@ const Appointments = () => {
       appointmentDate: formData.appointmentDate,
       appointmentTime: formData.appointmentTime,
       consultationMode: formData.consultationMode,
-      status: "Scheduled",
-      createdAt: new Date().toISOString(),
     };
 
-    // Save to localStorage
-    saveAppointment(appointmentToSave);
+    // Add to in-memory state via context
+    const savedAppointment = addAppointment(appointmentData);
 
     setConfirmationData({
-      appointmentNumber: appointmentId,
+      appointmentNumber: savedAppointment.id,
       patientName: formData.patientName,
       doctorName: selectedDoctor?.name || "",
       date: formatDate(formData.appointmentDate),
