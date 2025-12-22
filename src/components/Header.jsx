@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button.jsx";
 import { Menu, X, Heart } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell.jsx";
 
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Features", href: "/#features" },
   { name: "Appointments", href: "/appointments" },
   { name: "Video Consult", href: "/video-consultation" },
+  { name: "Notifications", href: "/notifications/patient" },
   { name: "Contact", href: "/#contact" },
 ];
 
@@ -58,6 +60,7 @@ const Header = () => {
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
+            <NotificationBell recipientType="patient" />
             <Button variant="ghost" size="sm">Sign In</Button>
             <Button size="sm" asChild>
               <Link to="/appointments">Book Appointment</Link>
@@ -99,6 +102,10 @@ const Header = () => {
                 );
               })}
               <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between px-2 py-2">
+                  <span className="text-muted-foreground font-medium">Notifications</span>
+                  <NotificationBell recipientType="patient" />
+                </div>
                 <Button variant="ghost" className="justify-start">Sign In</Button>
                 <Button className="justify-start" asChild>
                   <Link to="/appointments">Book Appointment</Link>
