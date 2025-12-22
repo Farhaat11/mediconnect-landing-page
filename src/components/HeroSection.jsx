@@ -4,24 +4,22 @@ import { ArrowRight, Heart } from "lucide-react";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20">
-      {/* Subtle background elements */}
+    <section className="relative min-h-[70vh] flex items-center justify-center pt-20">
       <div className="absolute inset-0 gradient-hero opacity-[0.02]" />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-3xl mx-auto text-center animate-fade-in">
-          {/* Logo accent */}
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-hero shadow-soft mb-8">
             <Heart className="w-8 h-8 text-primary-foreground" />
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6">
-            Healthcare<br />
-            <span className="text-gradient">Simplified</span>
+            Integrated Patient Care &<br />
+            <span className="text-gradient">Telehealth Management</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto mb-10">
-            Book appointments, consult with doctors, and manage your health — all in one place.
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+            Manage patient records, enable telehealth consultations, and streamline care coordination — all in one HIPAA-compliant platform.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -33,7 +31,7 @@ const HeroSection = () => {
             </Button>
             <Button variant="outline" size="lg" asChild>
               <Link to="/video-consultation">
-                Video Consultation
+                Start Video Consult
               </Link>
             </Button>
           </div>
