@@ -11,6 +11,7 @@ import MyAppointments from "@/components/appointments/MyAppointments.jsx";
 import { specializations, doctorsBySpecialization, timeSlots } from "@/data/appointmentData.js";
 import { validateForm, isFormValid } from "@/utils/validation.js";
 import { useAppointments } from "@/context/AppointmentContext.jsx";
+import { useNotifications } from "@/context/NotificationContext.jsx";
 
 const initialFormState = {
   patientName: "",
@@ -26,6 +27,7 @@ const initialFormState = {
 
 const Appointments = () => {
   const { addAppointment, getUpcomingAppointments } = useAppointments();
+  const { notifyAppointmentBooked } = useNotifications();
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -103,6 +105,13 @@ const Appointments = () => {
 
     // Add to in-memory state via context
     const savedAppointment = addAppointment(appointmentData);
+
+    // Trigger notifications for both patient and doctor
+    notifyAppointmentBooked({
+      ...savedAppointment,
+      patientName: formData.patientName,
+      doctorName: selectedDoctor?.name || "",
+    });
 
     setConfirmationData({
       appointmentNumber: savedAppointment.id,
