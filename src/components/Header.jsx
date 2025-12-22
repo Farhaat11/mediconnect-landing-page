@@ -6,11 +6,9 @@ import NotificationBell from "@/components/notifications/NotificationBell.jsx";
 
 const navLinks = [
   { name: "Home", href: "/" },
-  { name: "Features", href: "/#features" },
   { name: "Appointments", href: "/appointments" },
   { name: "Video Consult", href: "/video-consultation" },
   { name: "Notifications", href: "/notifications/patient" },
-  { name: "Contact", href: "/#contact" },
 ];
 
 const Header = () => {
