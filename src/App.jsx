@@ -19,6 +19,7 @@ import DoctorDashboard from "./Components/Dashboards/DoctorDashboard";
 import PatientDashboard from "./Components/Dashboards/PatientDashboard";
 import ProtectedRoute from "./Components/ProtectedRoute";
 import Appointments from "./pages/Appointments";
+import ViewAppointments from "./pages/ViewAppointments";
 
 
 
@@ -79,6 +80,7 @@ export default function App() {
               <Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
                 <Route path="/patient-dashboard" element={<PatientDashboard />} />
                 <Route path="/appointments" element={<Appointments />} />
+                <Route path="/appointments/view" element={<ViewAppointments />} />
               </Route>
 
               {/* Fallback */}
