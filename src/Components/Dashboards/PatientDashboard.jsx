@@ -67,7 +67,10 @@ const PatientDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
 
           {/* Book Appointment */}
-          <div className="bg-blue-500 hover:bg-blue-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
+          <div 
+            className="bg-blue-500 hover:bg-blue-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg"
+            onClick={() => navigate("/appointments")}
+          >
             <div className="flex items-center gap-4">
               <CalendarDays size={48} />
               <div>
