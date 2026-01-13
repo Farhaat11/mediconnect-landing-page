@@ -50,8 +50,8 @@ const DoctorDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
 
             {/* View Appointments */}
-            {/* <Link to="/appointments">
-              <div className="bg-indigo-500 hover:bg-indigo-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg ">
+            <Link to="/doctor/appointments">
+              <div className="bg-indigo-500 hover:bg-indigo-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
                 <div className="flex items-center gap-4">
                   <CalendarCheck size={48} />
                   <div>
@@ -64,13 +64,7 @@ const DoctorDashboard = () => {
                   </div>
                 </div>
               </div>
-            </Link> */}
-
-
-        
-              <Link to="/appointments" className="bg-indigo-500 hover:bg-indigo-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg w-full text-left">
-              View Appointments
-              </Link>
+            </Link>
            
 
 

@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, User, Phone, Mail, Stethoscope, Video, Building2, X, Eye, XCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User, Phone, Video, Building2, X, CheckCircle, XCircle, FileText, Stethoscope } from "lucide-react";
 import { useAppointments } from "../context/AppointmentContext";
 
-const ViewAppointments = () => {
-  const { appointments, cancelAppointment } = useAppointments();
+const DoctorAppointments = () => {
+  const { appointments, cancelAppointment, completeAppointment } = useAppointments();
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -45,9 +45,9 @@ const ViewAppointments = () => {
     setShowCancelModal(true);
   };
 
-  const handleViewDetails = (appointment) => {
+  const handleCompleteClick = (appointment) => {
     setSelectedAppointment(appointment);
-    setShowDetailsModal(true);
+    setShowCompleteModal(true);
   };
 
   const handleConfirmCancel = () => {
@@ -58,41 +58,36 @@ const ViewAppointments = () => {
     setSelectedAppointment(null);
   };
 
+  const handleConfirmComplete = () => {
+    if (selectedAppointment) {
+      completeAppointment(selectedAppointment.id);
+    }
+    setShowCompleteModal(false);
+    setSelectedAppointment(null);
+  };
+
   // Empty state
   if (appointments.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
         <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
             <Link
-              to="/patient-dashboard"
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+              to="/doctor-dashboard"
+              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 transition-colors"
             >
               <ArrowLeft size={20} />
               <span className="font-medium">Back to Dashboard</span>
-            </Link>
-            <Link
-              to="/appointments"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-            >
-              Book New Appointment
             </Link>
           </div>
         </header>
         <main className="max-w-7xl mx-auto px-4 py-8">
           <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
-              <Calendar className="w-10 h-10 text-blue-600" />
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 rounded-full mb-4">
+              <Calendar className="w-10 h-10 text-indigo-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800 mb-2">No Appointments Yet</h2>
-            <p className="text-gray-500 mb-6">You haven't booked any appointments yet.</p>
-            <Link
-              to="/appointments"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              <Calendar size={20} />
-              Book Your First Appointment
-            </Link>
+            <p className="text-gray-500">Patient appointments will appear here once booked.</p>
           </div>
         </main>
       </div>
@@ -100,23 +95,21 @@ const ViewAppointments = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link
-            to="/patient-dashboard"
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+            to="/doctor-dashboard"
+            className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 transition-colors"
           >
             <ArrowLeft size={20} />
             <span className="font-medium">Back to Dashboard</span>
           </Link>
-          <Link
-            to="/appointments"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            Book New Appointment
-          </Link>
+          <div className="flex items-center gap-2">
+            <Stethoscope size={20} className="text-indigo-600" />
+            <span className="font-medium text-gray-700">Doctor View</span>
+          </div>
         </div>
       </header>
 
@@ -124,8 +117,51 @@ const ViewAppointments = () => {
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">My Appointments</h1>
-          <p className="text-gray-500 mt-1">View and manage your scheduled appointments</p>
+          <h1 className="text-2xl font-bold text-gray-800">Patient Appointments</h1>
+          <p className="text-gray-500 mt-1">Manage and update patient appointment statuses</p>
+        </div>
+
+        {/* Stats Summary */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Calendar size={20} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {appointments.filter((a) => a.status === "Upcoming").length}
+                </p>
+                <p className="text-sm text-gray-500">Upcoming</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle size={20} className="text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {appointments.filter((a) => a.status === "Completed").length}
+                </p>
+                <p className="text-sm text-gray-500">Completed</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <XCircle size={20} className="text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {appointments.filter((a) => a.status === "Cancelled").length}
+                </p>
+                <p className="text-sm text-gray-500">Cancelled</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Mobile Cards View */}
@@ -159,23 +195,6 @@ const ViewAppointments = () => {
                   <Phone size={14} className="text-gray-400" />
                   <span>{appointment.phoneNumber}</span>
                 </div>
-
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Mail size={14} className="text-gray-400" />
-                  <span className="truncate">{appointment.emailId}</span>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-gray-100 my-4"></div>
-
-              {/* Doctor Info */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Stethoscope size={16} className="text-blue-500" />
-                  <span className="font-medium text-gray-800">{appointment.doctorName}</span>
-                </div>
-                <p className="text-sm text-gray-500 ml-6">{appointment.doctorSpecialization}</p>
               </div>
 
               {/* Date, Time, Mode */}
@@ -202,16 +221,29 @@ const ViewAppointments = () => {
                 </div>
               </div>
 
+              {/* Reason for Visit */}
+              {appointment.reasonForVisit && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <FileText size={14} className="text-gray-400 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Reason for Visit</p>
+                      <p className="text-sm text-gray-700">{appointment.reasonForVisit}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Actions */}
-              <div className="mt-5 flex gap-3">
-                <button
-                  onClick={() => handleViewDetails(appointment)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium text-sm"
-                >
-                  <Eye size={16} />
-                  View Details
-                </button>
-                {appointment.status === "Upcoming" && (
+              {appointment.status === "Upcoming" && (
+                <div className="mt-5 flex gap-3">
+                  <button
+                    onClick={() => handleCompleteClick(appointment)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+                  >
+                    <CheckCircle size={16} />
+                    Complete
+                  </button>
                   <button
                     onClick={() => handleCancelClick(appointment)}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm"
@@ -219,8 +251,8 @@ const ViewAppointments = () => {
                     <XCircle size={16} />
                     Cancel
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -233,9 +265,9 @@ const ViewAppointments = () => {
                 <tr>
                   <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient</th>
                   <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
-                  <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Doctor</th>
                   <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Schedule</th>
                   <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mode</th>
+                  <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Reason</th>
                   <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -246,8 +278,8 @@ const ViewAppointments = () => {
                     {/* Patient */}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User size={18} className="text-blue-600" />
+                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                          <User size={18} className="text-indigo-600" />
                         </div>
                         <div>
                           <p className="font-medium text-gray-800">{appointment.patientName}</p>
@@ -258,22 +290,10 @@ const ViewAppointments = () => {
 
                     {/* Contact */}
                     <td className="px-4 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <Phone size={12} className="text-gray-400" />
-                          {appointment.phoneNumber}
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <Mail size={12} className="text-gray-400" />
-                          <span className="truncate max-w-[160px]">{appointment.emailId}</span>
-                        </div>
+                      <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <Phone size={12} className="text-gray-400" />
+                        {appointment.phoneNumber}
                       </div>
-                    </td>
-
-                    {/* Doctor */}
-                    <td className="px-4 py-4">
-                      <p className="font-medium text-gray-800">{appointment.doctorName}</p>
-                      <p className="text-sm text-gray-500">{appointment.doctorSpecialization}</p>
                     </td>
 
                     {/* Schedule */}
@@ -306,6 +326,13 @@ const ViewAppointments = () => {
                       </div>
                     </td>
 
+                    {/* Reason */}
+                    <td className="px-4 py-4">
+                      <p className="text-sm text-gray-600 max-w-[200px] truncate" title={appointment.reasonForVisit}>
+                        {appointment.reasonForVisit || "-"}
+                      </p>
+                    </td>
+
                     {/* Status */}
                     <td className="px-4 py-4">
                       <span
@@ -320,21 +347,26 @@ const ViewAppointments = () => {
                     {/* Actions */}
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleViewDetails(appointment)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <Eye size={18} />
-                        </button>
                         {appointment.status === "Upcoming" && (
-                          <button
-                            onClick={() => handleCancelClick(appointment)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Cancel Appointment"
-                          >
-                            <XCircle size={18} />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleCompleteClick(appointment)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Mark as Completed"
+                            >
+                              <CheckCircle size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleCancelClick(appointment)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Cancel Appointment"
+                            >
+                              <XCircle size={18} />
+                            </button>
+                          </>
+                        )}
+                        {appointment.status !== "Upcoming" && (
+                          <span className="text-sm text-gray-400">-</span>
                         )}
                       </div>
                     </td>
@@ -363,9 +395,8 @@ const ViewAppointments = () => {
             <div className="mb-6">
               <p className="text-gray-600">
                 Are you sure you want to cancel the appointment with{" "}
-                <span className="font-semibold">{selectedAppointment.doctorName}</span> on{" "}
-                <span className="font-semibold">{formatDate(selectedAppointment.appointmentDate)}</span> at{" "}
-                <span className="font-semibold">{formatTime(selectedAppointment.appointmentTime)}</span>?
+                <span className="font-semibold">{selectedAppointment.patientName}</span> on{" "}
+                <span className="font-semibold">{formatDate(selectedAppointment.appointmentDate)}</span>?
               </p>
               <p className="text-sm text-red-500 mt-3">This action cannot be undone.</p>
             </div>
@@ -388,103 +419,41 @@ const ViewAppointments = () => {
         </div>
       )}
 
-      {/* View Details Modal */}
-      {showDetailsModal && selectedAppointment && (
+      {/* Complete Confirmation Modal */}
+      {showCompleteModal && selectedAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-800">Appointment Details</h3>
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Complete Appointment</h3>
               <button
-                onClick={() => setShowDetailsModal(false)}
+                onClick={() => setShowCompleteModal(false)}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
-
-            {/* Status */}
+            
             <div className="mb-6">
-              <span
-                className={`px-4 py-1.5 text-sm font-semibold rounded-full border ${getStatusColor(
-                  selectedAppointment.status
-                )}`}
+              <p className="text-gray-600">
+                Mark the appointment with{" "}
+                <span className="font-semibold">{selectedAppointment.patientName}</span> as completed?
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCompleteModal(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
-                {selectedAppointment.status}
-              </span>
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmComplete}
+                className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                Yes, Complete
+              </button>
             </div>
-
-            {/* Patient Details */}
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Patient Details</h4>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <User size={18} className="text-gray-400" />
-                  <div>
-                    <p className="font-medium text-gray-800">{selectedAppointment.patientName}</p>
-                    <p className="text-sm text-gray-500">{selectedAppointment.age} years old</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone size={18} className="text-gray-400" />
-                  <p className="text-gray-700">{selectedAppointment.phoneNumber}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail size={18} className="text-gray-400" />
-                  <p className="text-gray-700">{selectedAppointment.emailId}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Doctor Details */}
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Doctor Details</h4>
-              <div className="flex items-center gap-3">
-                <Stethoscope size={18} className="text-blue-500" />
-                <div>
-                  <p className="font-medium text-gray-800">{selectedAppointment.doctorName}</p>
-                  <p className="text-sm text-gray-500">{selectedAppointment.doctorSpecialization}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Appointment Details */}
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Appointment Details</h4>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Calendar size={18} className="text-gray-400" />
-                  <p className="text-gray-700">{formatDate(selectedAppointment.appointmentDate)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Clock size={18} className="text-gray-400" />
-                  <p className="text-gray-700">{formatTime(selectedAppointment.appointmentTime)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {selectedAppointment.consultationType === "virtual" ? (
-                    <Video size={18} className="text-blue-500" />
-                  ) : (
-                    <Building2 size={18} className="text-green-500" />
-                  )}
-                  <p className="text-gray-700 capitalize">{selectedAppointment.consultationType} Consultation</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Reason for Visit */}
-            {selectedAppointment.reasonForVisit && (
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Reason for Visit</h4>
-                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{selectedAppointment.reasonForVisit}</p>
-              </div>
-            )}
-
-            {/* Close Button */}
-            <button
-              onClick={() => setShowDetailsModal(false)}
-              className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Close
-            </button>
           </div>
         </div>
       )}
@@ -492,4 +461,4 @@ const ViewAppointments = () => {
   );
 };
 
-export default ViewAppointments;
+export default DoctorAppointments;

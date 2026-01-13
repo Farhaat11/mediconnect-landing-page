@@ -1,8 +1,12 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, User, Stethoscope, Video, Building2, Phone, Mail, Users } from "lucide-react";
+import { useAppointments } from "../context/AppointmentContext";
 
 const Appointments = () => {
+  const navigate = useNavigate();
+  const { addAppointment } = useAppointments();
+  
   const [formData, setFormData] = useState({
     patientName: "",
     phoneNumber: "",
@@ -135,8 +139,11 @@ const Appointments = () => {
       return;
     }
 
+    // Add appointment to context/localStorage
+    addAppointment(formData);
+
     setSubmitted(true);
-    // Reset after 3 seconds
+    // Reset after 3 seconds and navigate to view
     setTimeout(() => {
       setSubmitted(false);
       setFormData({
@@ -152,7 +159,8 @@ const Appointments = () => {
         reasonForVisit: "",
       });
       setErrors({});
-    }, 3000);
+      navigate("/appointments/view");
+    }, 2000);
   };
 
   const inputBaseClass = "w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors outline-none";
@@ -208,10 +216,10 @@ const Appointments = () => {
                 </svg>
               </div>
               <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                Appointment Submitted!
+                Appointment Booked Successfully!
               </h2>
               <p className="text-gray-500">
-                We'll confirm your appointment shortly.
+                Redirecting to your appointments...
               </p>
             </div>
           ) : (
@@ -457,7 +465,7 @@ const Appointments = () => {
                     <label
                       className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         formData.consultationType === "in-person"
-                          ? "border-blue-500 bg-blue-50"
+                          ? "border-green-500 bg-green-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
@@ -467,20 +475,20 @@ const Appointments = () => {
                         value="in-person"
                         checked={formData.consultationType === "in-person"}
                         onChange={handleChange}
-                        className="w-4 h-4 text-blue-600"
+                        className="w-4 h-4 text-green-600"
                       />
                       <Building2
                         size={20}
                         className={
                           formData.consultationType === "in-person"
-                            ? "text-blue-600"
+                            ? "text-green-600"
                             : "text-gray-400"
                         }
                       />
                       <span
                         className={`font-medium ${
                           formData.consultationType === "in-person"
-                            ? "text-blue-700"
+                            ? "text-green-700"
                             : "text-gray-700"
                         }`}
                       >
@@ -489,17 +497,15 @@ const Appointments = () => {
                     </label>
                   </div>
 
-                  {/* Conditional Info Box */}
+                  {/* Conditional Message */}
                   {formData.consultationType === "virtual" && (
                     <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-start gap-3">
                         <Video size={20} className="text-blue-600 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-blue-800">
-                            Virtual Consultation
-                          </p>
+                          <p className="font-medium text-blue-800">Virtual Consultation</p>
                           <p className="text-sm text-blue-600 mt-1">
-                            Online meeting link will be shared after confirmation.
+                            An online meeting link will be shared with you after confirmation via email.
                           </p>
                         </div>
                       </div>
@@ -511,15 +517,9 @@ const Appointments = () => {
                       <div className="flex items-start gap-3">
                         <Building2 size={20} className="text-green-600 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-green-800">
-                            Clinic Address
-                          </p>
+                          <p className="font-medium text-green-800">In-Person Consultation</p>
                           <p className="text-sm text-green-600 mt-1">
-                            MediConnect Health Center
-                            <br />
-                            123 Healthcare Avenue, Medical District
-                            <br />
-                            New Delhi, India - 110001
+                            Visit us at: MediConnect Healthcare Center, 123 Medical Plaza, Suite 456, City - 500001
                           </p>
                         </div>
                       </div>
@@ -536,8 +536,8 @@ const Appointments = () => {
                     name="reasonForVisit"
                     value={formData.reasonForVisit}
                     onChange={handleChange}
+                    placeholder="Briefly describe your symptoms or reason for consultation..."
                     rows={4}
-                    placeholder="Please describe your symptoms or reason for this appointment..."
                     className={`${inputBaseClass} resize-none ${errors.reasonForVisit ? inputErrorClass : inputNormalClass}`}
                   />
                   {errors.reasonForVisit && (
@@ -547,12 +547,14 @@ const Appointments = () => {
               </div>
 
               {/* Submit Button */}
-              <button
-                type="submit"
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl"
-              >
-                Book Appointment
-              </button>
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.01]"
+                >
+                  Book Appointment
+                </button>
+              </div>
             </form>
           )}
         </div>

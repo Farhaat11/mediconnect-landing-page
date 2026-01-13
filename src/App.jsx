@@ -1,9 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-
-
-
 import RegisterHorizontal from "./Components/Register";
 import LoginWithRoles from "./Components/Login";
 import ForgotPassword from "./Components/ForgotPassword";
@@ -14,12 +11,14 @@ import { m3Routes } from "../modules/m3/routes";
 
 import { Module4Provider } from "../modules/m4/module-2.4-ehealth-ui/src/m4context/context";
 import { RoleProvider } from "../src/Context/RoleContext";
+import { AppointmentProvider } from "./context/AppointmentContext";
 
 import DoctorDashboard from "./Components/Dashboards/DoctorDashboard";
 import PatientDashboard from "./Components/Dashboards/PatientDashboard";
 import ProtectedRoute from "./Components/ProtectedRoute";
 import Appointments from "./pages/Appointments";
 import ViewAppointments from "./pages/ViewAppointments";
+import DoctorAppointments from "./pages/DoctorAppointments";
 
 
 
@@ -44,9 +43,9 @@ function renderRoutes(routes) {
 export default function App() {
   return (
     <RoleProvider>
-      
-          <BrowserRouter>
-            <Module4Provider>
+      <AppointmentProvider>
+        <BrowserRouter>
+          <Module4Provider>
             <Routes>
               {/* Redirect root to login */}
               <Route path="/" element={<Navigate to="/login" replace />} />
@@ -69,12 +68,11 @@ export default function App() {
                 {renderRoutes(m3Routes)}
               </Route>
 
-
               {/* Doctor segment protected */}
               <Route element={<ProtectedRoute allowedRoles={["doctor"]} />}>
                 <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+                <Route path="/doctor/appointments" element={<DoctorAppointments />} />
               </Route>
-
 
               {/* Patient segment protected */}
               <Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
@@ -86,10 +84,10 @@ export default function App() {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
-            </Module4Provider>
-          </BrowserRouter>
-        </RoleProvider>
-
+          </Module4Provider>
+        </BrowserRouter>
+      </AppointmentProvider>
+    </RoleProvider>
   );
 }
 
