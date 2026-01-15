@@ -113,7 +113,7 @@ const DoctorDashboard = () => {
                   <FolderHeart size={48} />
                   <div>
                     <h3 className="text-xl font-semibold">
-                      Prescription Management
+                      Prescription
                     </h3>
                     <p className="text-sm opacity-90">
                       View & update medical records
