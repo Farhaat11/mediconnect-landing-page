@@ -46,85 +46,59 @@ const DoctorDashboard = () => {
         </div>
 
         {/* Action Cards */}
-        <div className="flex flex-col gap-7">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
 
-            {/* View Appointments */}
-            <Link to="/doctor/appointments">
-              <div className="bg-indigo-500 hover:bg-indigo-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
-                <div className="flex items-center gap-4">
-                  <CalendarCheck size={48} />
-                  <div>
-                    <h3 className="text-xl font-semibold">
-                      View Appointments
-                    </h3>
-                    <p className="text-sm opacity-90">
-                      Manage patient visits
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Link>
-           
-
-
-
-            {/* EHR Management */}
-            <Link to="/EHR">
-              <div className="bg-emerald-500 hover:bg-emerald-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
-                <div className="flex items-center gap-4">
-                  <FolderHeart size={48} />
-                  <div>
-                    <h3 className="text-xl font-semibold">
-                      EHR Management
-                    </h3>
-                    <p className="text-sm opacity-90">
-                      View & update medical records
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            {/* Video Call */}
-            <Link to="/doctor/videocall">
-              <div className="bg-emerald-500 hover:bg-emerald-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
-                <div className="flex items-center gap-4">
-                  <Video size={48} />
-                  <div>
-                    <h3 className="text-xl font-semibold">
-                      Video Call
-                    </h3>
-                    <p className="text-sm opacity-90">
-                      Join virtual consultations
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-          </div>
-
-          {/* Prescription generation */}
-          <Link to="/prescription">
-            <div className="w-full flex justify-center ">
-              <div className="bg-emerald-500 hover:bg-emerald-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
-                <div className="flex items-center gap-4">
-                  <FolderHeart size={48} />
-                  <div>
-                    <h3 className="text-xl font-semibold">
-                      Prescription
-                    </h3>
-                    <p className="text-sm opacity-90">
-                      View & update medical records
-                    </p>
-                  </div>
+          {/* View Appointments */}
+          <Link to="/doctor/appointments">
+            <div className="bg-indigo-500 hover:bg-indigo-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg h-full">
+              <div className="flex items-center gap-4">
+                <CalendarCheck size={48} />
+                <div>
+                  <h3 className="text-xl font-semibold">View Appointments</h3>
+                  <p className="text-sm opacity-90">Manage patient visits</p>
                 </div>
               </div>
             </div>
           </Link>
 
+          {/* EHR Management */}
+          <Link to="/EHR">
+            <div className="bg-emerald-500 hover:bg-emerald-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg h-full">
+              <div className="flex items-center gap-4">
+                <FolderHeart size={48} />
+                <div>
+                  <h3 className="text-xl font-semibold">EHR Management</h3>
+                  <p className="text-sm opacity-90">View & update medical records</p>
+                </div>
+              </div>
+            </div>
+          </Link>
 
+          {/* Video Call */}
+          <Link to="/doctor/videocall">
+            <div className="bg-emerald-500 hover:bg-emerald-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg h-full">
+              <div className="flex items-center gap-4">
+                <Video size={48} />
+                <div>
+                  <h3 className="text-xl font-semibold">Video Call</h3>
+                  <p className="text-sm opacity-90">Join virtual consultations</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Prescription */}
+          <Link to="/prescription">
+            <div className="bg-amber-500 hover:bg-amber-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg h-full">
+              <div className="flex items-center gap-4">
+                <FolderHeart size={48} />
+                <div>
+                  <h3 className="text-xl font-semibold">Prescription</h3>
+                  <p className="text-sm opacity-90">Generate prescriptions</p>
+                </div>
+              </div>
+            </div>
+          </Link>
 
         </div>
       </div>
