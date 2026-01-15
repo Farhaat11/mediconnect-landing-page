@@ -88,7 +88,7 @@ const DoctorDashboard = () => {
 
             {/* Video Call */}
             <Link to="/doctor/videocall">
-              <div className="bg-teal-500 hover:bg-teal-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
+              <div className="bg-emerald-500 hover:bg-emerald-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
                 <div className="flex items-center gap-4">
                   <Video size={48} />
                   <div>
