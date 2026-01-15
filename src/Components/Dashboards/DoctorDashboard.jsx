@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom"
-import { Stethoscope, CalendarCheck, FolderHeart } from "lucide-react";
+import { Stethoscope, CalendarCheck, FolderHeart, Video } from "lucide-react";
 import { useRole } from "../../Context/RoleContext";
 import { Header } from "../../../modules/m3/src/components/Header";
 
@@ -86,7 +86,22 @@ const DoctorDashboard = () => {
               </div>
             </Link>
 
-
+            {/* Video Call */}
+            <Link to="/doctor/videocall">
+              <div className="bg-teal-500 hover:bg-teal-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg">
+                <div className="flex items-center gap-4">
+                  <Video size={48} />
+                  <div>
+                    <h3 className="text-xl font-semibold">
+                      Video Call
+                    </h3>
+                    <p className="text-sm opacity-90">
+                      Join virtual consultations
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
 
           </div>
 
