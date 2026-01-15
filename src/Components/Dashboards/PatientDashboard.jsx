@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom"
-import { CalendarDays, FileText, ClipboardList } from "lucide-react";
+import { CalendarDays, FileText, ClipboardList, Video } from "lucide-react";
 import { useRole } from "../../Context/RoleContext";
 import PrescriptionModal from "../PrescriptionModal"
 import { Header } from "../../../modules/m3/src/components/HeaderPatient";
@@ -101,10 +101,10 @@ const PatientDashboard = () => {
 
           {/* View My Appointments */}
           <div 
-            className="bg-purple-500 hover:bg-purple-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg md:col-span-2"
+            className="bg-purple-500 hover:bg-purple-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg"
             onClick={() => navigate("/appointments/view")}
           >
-            <div className="flex items-center gap-4 justify-center">
+            <div className="flex items-center gap-4">
               <ClipboardList size={48} />
               <div>
                 <h3 className="text-xl font-semibold">
@@ -112,6 +112,24 @@ const PatientDashboard = () => {
                 </h3>
                 <p className="text-sm opacity-90">
                   Check your scheduled visits
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Call */}
+          <div 
+            className="bg-teal-500 hover:bg-teal-600 transition rounded-xl p-6 text-white cursor-pointer shadow-lg"
+            onClick={() => navigate("/patient/videocall")}
+          >
+            <div className="flex items-center gap-4">
+              <Video size={48} />
+              <div>
+                <h3 className="text-xl font-semibold">
+                  Video Call
+                </h3>
+                <p className="text-sm opacity-90">
+                  Join virtual consultations
                 </p>
               </div>
             </div>
