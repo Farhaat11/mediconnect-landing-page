@@ -28,9 +28,19 @@ export const AppointmentProvider = ({ children }) => {
 
   // Add new appointment
   const addAppointment = (appointmentData) => {
+    // Normalize the data structure for consistent access
     const newAppointment = {
-      ...appointmentData,
       id: generateId(),
+      patientName: appointmentData.patientName,
+      patientPhone: appointmentData.phoneNumber,
+      patientEmail: appointmentData.emailId,
+      patientAge: appointmentData.age,
+      doctorName: appointmentData.doctorName,
+      specialization: appointmentData.doctorSpecialization,
+      appointmentDate: appointmentData.appointmentDate,
+      appointmentTime: appointmentData.appointmentTime,
+      consultationMode: appointmentData.consultationType === "virtual" ? "Virtual" : "In-Person",
+      reasonForVisit: appointmentData.reasonForVisit,
       status: "Upcoming",
       createdAt: new Date().toISOString(),
     };
