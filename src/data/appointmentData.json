@@ -1,0 +1,42 @@
+{
+  "doctorSpecializations": [
+    "General Physician",
+    "Cardiologist",
+    "Dermatologist",
+    "Orthopedic"
+  ],
+  "doctorsBySpecialization": {
+    "General Physician": [
+      "Dr. Sarah Johnson",
+      "Dr. Amit Sharma",
+      "Dr. Priya Patel"
+    ],
+    "Cardiologist": [
+      "Dr. Michael Chen",
+      "Dr. Rajesh Kumar",
+      "Dr. Anita Gupta"
+    ],
+    "Dermatologist": [
+      "Dr. Emily Davis",
+      "Dr. Neha Verma",
+      "Dr. Suresh Reddy"
+    ],
+    "Orthopedic": [
+      "Dr. Robert Wilson",
+      "Dr. Vikram Singh",
+      "Dr. Meera Nair"
+    ]
+  },
+  "availableTimeSlots": [
+    {
+      "id": "morning",
+      "label": "Morning Slot (9:00 AM – 1:00 PM)",
+      "value": "9:00 AM - 1:00 PM"
+    },
+    {
+      "id": "evening",
+      "label": "Evening Slot (4:00 PM – 9:00 PM)",
+      "value": "4:00 PM - 9:00 PM"
+    }
+  ]
+}
