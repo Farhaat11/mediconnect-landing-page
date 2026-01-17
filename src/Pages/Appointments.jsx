@@ -407,10 +407,11 @@ const Appointments = () => {
                     {/* Insurance Policy (Optional) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Insurance Policy <span className="text-gray-400">(Optional)</span>
+                        Insurance Policy 
                       </label>
                       <input
                         type="text"
+                        required={true}
                         name="insurancePolicy"
                         value={personalData.insurancePolicy}
                         onChange={handlePersonalDataChange}
