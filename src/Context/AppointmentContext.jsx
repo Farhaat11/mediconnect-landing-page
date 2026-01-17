@@ -28,13 +28,22 @@ export const AppointmentProvider = ({ children }) => {
 
   // Add new appointment
   const addAppointment = (appointmentData) => {
+    // Check if booking for someone else (has personal data fields)
+    const isBookingForSomeoneElse = Boolean(appointmentData.fullName);
+
     // Normalize the data structure for consistent access
     const newAppointment = {
       id: generateId(),
-      patientName: appointmentData.patientName,
-      patientPhone: appointmentData.phoneNumber,
-      patientEmail: appointmentData.emailId,
-      patientAge: appointmentData.age,
+      // Use personal data fields if booking for someone else, otherwise use placeholder
+      patientName: isBookingForSomeoneElse ? appointmentData.fullName : "Self (Registered User)",
+      patientPhone: isBookingForSomeoneElse ? appointmentData.phone : "",
+      patientEmail: isBookingForSomeoneElse ? appointmentData.email : "",
+      patientAge: isBookingForSomeoneElse && appointmentData.dob 
+        ? calculateAge(appointmentData.dob) 
+        : "",
+      patientGender: isBookingForSomeoneElse ? appointmentData.gender : "",
+      patientDob: isBookingForSomeoneElse ? appointmentData.dob : "",
+      insurancePolicy: isBookingForSomeoneElse ? appointmentData.insurancePolicy : "",
       doctorName: appointmentData.doctorName,
       specialization: appointmentData.doctorSpecialization,
       appointmentDate: appointmentData.appointmentDate,
@@ -42,9 +51,22 @@ export const AppointmentProvider = ({ children }) => {
       consultationMode: appointmentData.consultationType === "virtual" ? "Virtual" : "In-Person",
       status: "Upcoming",
       createdAt: new Date().toISOString(),
+      bookingForSomeoneElse: isBookingForSomeoneElse,
     };
     setAppointments((prev) => [...prev, newAppointment]);
     return newAppointment;
+  };
+
+  // Helper function to calculate age from date of birth
+  const calculateAge = (dob) => {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
   };
 
   // Update appointment status

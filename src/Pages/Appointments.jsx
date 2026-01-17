@@ -11,15 +11,21 @@ const Appointments = () => {
   const { doctorSpecializations, doctorsBySpecialization, availableTimeSlots } = appointmentData;
   
   const [formData, setFormData] = useState({
-    patientName: "",
-    phoneNumber: "",
-    emailId: "",
-    age: "",
     doctorSpecialization: "",
     doctorName: "",
     appointmentDate: "",
     appointmentTime: "",
     consultationType: "virtual",
+  });
+
+  const [bookingForSomeoneElse, setBookingForSomeoneElse] = useState(false);
+  const [personalData, setPersonalData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    gender: "",
+    dob: "",
+    insurancePolicy: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -32,26 +38,39 @@ const Appointments = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.patientName.trim()) {
-      newErrors.patientName = "Patient name is required";
-    }
+    // Validate personal data only if booking for someone else
+    if (bookingForSomeoneElse) {
+      if (!personalData.fullName.trim()) {
+        newErrors.fullName = "Full name is required";
+      } else if (personalData.fullName.trim().length < 3) {
+        newErrors.fullName = "Full name must be at least 3 characters";
+      }
 
-    if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required";
-    } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ""))) {
-      newErrors.phoneNumber = "Enter a valid 10-digit phone number";
-    }
+      if (!personalData.email.trim()) {
+        newErrors.email = "Email is required";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalData.email)) {
+        newErrors.email = "Enter a valid email address";
+      }
 
-    if (!formData.emailId.trim()) {
-      newErrors.emailId = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailId)) {
-      newErrors.emailId = "Enter a valid email address";
-    }
+      if (!personalData.phone.trim()) {
+        newErrors.phone = "Phone number is required";
+      } else if (!/^\d{10}$/.test(personalData.phone.replace(/\D/g, ""))) {
+        newErrors.phone = "Enter a valid 10-digit phone number";
+      }
 
-    if (!formData.age) {
-      newErrors.age = "Age is required";
-    } else if (formData.age < 1 || formData.age > 120) {
-      newErrors.age = "Enter a valid age (1-120)";
+      if (!personalData.gender) {
+        newErrors.gender = "Gender is required";
+      }
+
+      if (!personalData.dob) {
+        newErrors.dob = "Date of birth is required";
+      } else {
+        const dobDate = new Date(personalData.dob);
+        const today = new Date();
+        if (dobDate >= today) {
+          newErrors.dob = "Date of birth must be a past date";
+        }
+      }
     }
 
     if (!formData.doctorSpecialization) {
@@ -100,6 +119,22 @@ const Appointments = () => {
     }
   };
 
+  const handlePersonalDataChange = (e) => {
+    const { name, value } = e.target;
+    setPersonalData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when field is modified
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
@@ -107,24 +142,34 @@ const Appointments = () => {
       return;
     }
 
+    // Build payload based on booking type
+    const payload = bookingForSomeoneElse
+      ? { ...formData, ...personalData }
+      : { ...formData };
+
     // Add appointment to context/localStorage
-    addAppointment(formData);
+    addAppointment(payload);
 
     setSubmitted(true);
     // Reset after 3 seconds and navigate to view
     setTimeout(() => {
       setSubmitted(false);
       setFormData({
-        patientName: "",
-        phoneNumber: "",
-        emailId: "",
-        age: "",
         doctorSpecialization: "",
         doctorName: "",
         appointmentDate: "",
         appointmentTime: "",
         consultationType: "virtual",
       });
+      setPersonalData({
+        fullName: "",
+        email: "",
+        phone: "",
+        gender: "",
+        dob: "",
+        insurancePolicy: "",
+      });
+      setBookingForSomeoneElse(false);
       setErrors({});
       navigate("/appointments/view");
     }, 2000);
@@ -198,87 +243,162 @@ const Appointments = () => {
                   Patient Details
                 </h2>
                 
-                <div className="space-y-4">
-                  {/* Patient Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Patient Name <span className="text-red-500">*</span>
-                    </label>
+                {/* Booking for Someone Else Checkbox */}
+                <div className="mb-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
                     <input
-                      type="text"
-                      name="patientName"
-                      value={formData.patientName}
-                      onChange={handleChange}
-                      placeholder="Enter your full name"
-                      className={`${inputBaseClass} ${errors.patientName ? inputErrorClass : inputNormalClass}`}
+                      type="checkbox"
+                      checked={bookingForSomeoneElse}
+                      onChange={(e) => {
+                        setBookingForSomeoneElse(e.target.checked);
+                        // Clear personal data errors when toggling
+                        if (!e.target.checked) {
+                          setErrors((prev) => {
+                            const newErrors = { ...prev };
+                            delete newErrors.fullName;
+                            delete newErrors.email;
+                            delete newErrors.phone;
+                            delete newErrors.gender;
+                            delete newErrors.dob;
+                            return newErrors;
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    {errors.patientName && (
-                      <p className="mt-1 text-sm text-red-500">{errors.patientName}</p>
-                    )}
-                  </div>
-
-                  {/* Phone and Email Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Phone Number */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Phone size={14} className="text-gray-400" />
-                        Phone Number <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleChange}
-                        placeholder="Enter 10-digit number"
-                        className={`${inputBaseClass} ${errors.phoneNumber ? inputErrorClass : inputNormalClass}`}
-                      />
-                      {errors.phoneNumber && (
-                        <p className="mt-1 text-sm text-red-500">{errors.phoneNumber}</p>
-                      )}
-                    </div>
-
-                    {/* Email ID */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Mail size={14} className="text-gray-400" />
-                        Email ID <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        name="emailId"
-                        value={formData.emailId}
-                        onChange={handleChange}
-                        placeholder="Enter your email"
-                        className={`${inputBaseClass} ${errors.emailId ? inputErrorClass : inputNormalClass}`}
-                      />
-                      {errors.emailId && (
-                        <p className="mt-1 text-sm text-red-500">{errors.emailId}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Age */}
-                  <div className="w-1/2 md:w-1/3">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                      <Users size={14} className="text-gray-400" />
-                      Age <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
-                      onChange={handleChange}
-                      placeholder="Age"
-                      min="1"
-                      max="120"
-                      className={`${inputBaseClass} ${errors.age ? inputErrorClass : inputNormalClass}`}
-                    />
-                    {errors.age && (
-                      <p className="mt-1 text-sm text-red-500">{errors.age}</p>
-                    )}
-                  </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      Booking for someone else?
+                    </span>
+                  </label>
                 </div>
+
+                {/* Conditional Personal Data Fields */}
+                {bookingForSomeoneElse && (
+                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    {/* Full Name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={personalData.fullName}
+                        onChange={handlePersonalDataChange}
+                        placeholder="Enter patient's full name"
+                        className={`${inputBaseClass} ${errors.fullName ? inputErrorClass : inputNormalClass}`}
+                      />
+                      {errors.fullName && (
+                        <p className="mt-1 text-sm text-red-500">{errors.fullName}</p>
+                      )}
+                    </div>
+
+                    {/* Email and Phone Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Email */}
+                      <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                          <Mail size={14} className="text-gray-400" />
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={personalData.email}
+                          onChange={handlePersonalDataChange}
+                          placeholder="Enter email address"
+                          className={`${inputBaseClass} ${errors.email ? inputErrorClass : inputNormalClass}`}
+                        />
+                        {errors.email && (
+                          <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+                        )}
+                      </div>
+
+                      {/* Phone */}
+                      <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                          <Phone size={14} className="text-gray-400" />
+                          Phone <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={personalData.phone}
+                          onChange={handlePersonalDataChange}
+                          placeholder="Enter 10-digit number"
+                          className={`${inputBaseClass} ${errors.phone ? inputErrorClass : inputNormalClass}`}
+                        />
+                        {errors.phone && (
+                          <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Gender and DOB Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Gender */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Gender <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          name="gender"
+                          value={personalData.gender}
+                          onChange={handlePersonalDataChange}
+                          className={`${inputBaseClass} bg-white ${errors.gender ? inputErrorClass : inputNormalClass}`}
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        {errors.gender && (
+                          <p className="mt-1 text-sm text-red-500">{errors.gender}</p>
+                        )}
+                      </div>
+
+                      {/* Date of Birth */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Date of Birth <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="dob"
+                          value={personalData.dob}
+                          onChange={handlePersonalDataChange}
+                          max={new Date().toISOString().split("T")[0]}
+                          className={`${inputBaseClass} ${errors.dob ? inputErrorClass : inputNormalClass}`}
+                        />
+                        {errors.dob && (
+                          <p className="mt-1 text-sm text-red-500">{errors.dob}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Insurance Policy (Optional) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Insurance Policy <span className="text-gray-400">(Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="insurancePolicy"
+                        value={personalData.insurancePolicy}
+                        onChange={handlePersonalDataChange}
+                        placeholder="Enter insurance policy number"
+                        className={`${inputBaseClass} ${inputNormalClass}`}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Info message when not booking for someone else */}
+                {!bookingForSomeoneElse && (
+                  <p className="text-sm text-gray-500 italic">
+                    Your personal details will be fetched from your registered profile.
+                  </p>
+                )}
               </div>
 
               {/* Doctor Details Section */}
