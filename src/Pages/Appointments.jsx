@@ -1,14 +1,42 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, User, Stethoscope, Video, Building2, Phone, Mail, Users } from "lucide-react";
-import { useAppointments } from "../context/AppointmentContext";
+import { useAppointments } from "../Context/AppointmentContext";
 import appointmentData from "../data/appointmentData.json";
+
+// Generate 30-minute time slots for morning (09:00-12:00) and evening (16:00-20:00)
+const generateTimeSlots = () => {
+  const slots = [];
+  
+  // Morning slots: 09:00 - 12:00
+  for (let hour = 9; hour < 12; hour++) {
+    const startHour = hour.toString().padStart(2, "0");
+    const endHour = hour.toString().padStart(2, "0");
+    const nextHour = (hour + 1).toString().padStart(2, "0");
+    
+    slots.push(`${startHour}:00 - ${startHour}:30`);
+    slots.push(`${startHour}:30 - ${nextHour}:00`);
+  }
+  
+  // Evening slots: 16:00 - 20:00
+  for (let hour = 16; hour < 20; hour++) {
+    const startHour = hour.toString().padStart(2, "0");
+    const nextHour = (hour + 1).toString().padStart(2, "0");
+    
+    slots.push(`${startHour}:00 - ${startHour}:30`);
+    slots.push(`${startHour}:30 - ${nextHour}:00`);
+  }
+  
+  return slots;
+};
+
+const TIME_SLOTS = generateTimeSlots();
 
 const Appointments = () => {
   const navigate = useNavigate();
   const { addAppointment } = useAppointments();
 
-  const { doctorSpecializations, doctorsBySpecialization, availableTimeSlots } = appointmentData;
+  const { doctorSpecializations, doctorsBySpecialization } = appointmentData;
   
   const [formData, setFormData] = useState({
     doctorSpecialization: "",
@@ -501,11 +529,26 @@ const Appointments = () => {
                       className={`${inputBaseClass} bg-white ${errors.appointmentTime ? inputErrorClass : inputNormalClass}`}
                     >
                       <option value="">Select Time Slot</option>
-                      {availableTimeSlots.map((slot) => (
-                        <option key={slot.id} value={slot.value}>
-                          {slot.label}
-                        </option>
-                      ))}
+                      <optgroup label="Morning (09:00 - 12:00)">
+                        {TIME_SLOTS.filter(slot => {
+                          const hour = parseInt(slot.split(":")[0]);
+                          return hour >= 9 && hour < 12;
+                        }).map((slot) => (
+                          <option key={slot} value={slot}>
+                            {slot}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Evening (16:00 - 20:00)">
+                        {TIME_SLOTS.filter(slot => {
+                          const hour = parseInt(slot.split(":")[0]);
+                          return hour >= 16 && hour < 20;
+                        }).map((slot) => (
+                          <option key={slot} value={slot}>
+                            {slot}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                     {errors.appointmentTime && (
                       <p className="mt-1 text-sm text-red-500">{errors.appointmentTime}</p>

@@ -16,11 +16,11 @@ import { AppointmentProvider } from "./Context/AppointmentContext";
 import DoctorDashboard from "./Components/Dashboards/DoctorDashboard";
 import PatientDashboard from "./Components/Dashboards/PatientDashboard";
 import ProtectedRoute from "./Components/ProtectedRoute";
-import Appointments from "./pages/Appointments";
-import ViewAppointments from "./pages/ViewAppointments";
-import DoctorAppointments from "./pages/DoctorAppointments";
-import PatientVideoCall from "./pages/PatientVideoCall";
-import DoctorVideoCall from "./pages/DoctorVideoCall";
+import Appointments from "./Pages/Appointments";
+import ViewAppointments from "./Pages/ViewAppointments";
+import DoctorAppointments from "./Pages/DoctorAppointments";
+import PatientVideoCall from "./Pages/PatientVideoCall";
+import DoctorVideoCall from "./Pages/DoctorVideoCall";
 
 
 
