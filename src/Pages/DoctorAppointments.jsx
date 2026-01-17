@@ -207,11 +207,10 @@ const DoctorAppointments = () => {
                   <Clock size={14} className="text-gray-400" />
                   <span>{formatTime(appointment.appointmentTime)}</span>
                 </div>
-                <div className={`flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg ${
-                  appointment.consultationType === "virtual"
+                <div className={`flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg ${appointment.consultationType === "virtual"
                     ? "bg-blue-50 text-blue-600"
                     : "bg-green-50 text-green-600"
-                }`}>
+                  }`}>
                   {appointment.consultationType === "virtual" ? (
                     <Video size={14} />
                   ) : (
@@ -312,11 +311,10 @@ const DoctorAppointments = () => {
 
                     {/* Mode */}
                     <td className="px-4 py-4">
-                      <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                        appointment.consultationType === "virtual"
+                      <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${appointment.consultationType === "virtual"
                           ? "bg-blue-50 text-blue-600"
                           : "bg-green-50 text-green-600"
-                      }`}>
+                        }`}>
                         {appointment.consultationType === "virtual" ? (
                           <Video size={12} />
                         ) : (
@@ -391,7 +389,7 @@ const DoctorAppointments = () => {
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-gray-600">
                 Are you sure you want to cancel the appointment with{" "}
@@ -432,7 +430,7 @@ const DoctorAppointments = () => {
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-gray-600">
                 Mark the appointment with{" "}

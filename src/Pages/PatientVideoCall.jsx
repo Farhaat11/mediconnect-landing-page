@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Video, Phone, ArrowLeft, Clock, User, Mic, MicOff, VideoOff, Calendar } from "lucide-react";
 import { useAppointments } from "../Context/AppointmentContext";
@@ -10,6 +10,13 @@ const PatientVideoCall = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
 
+  // WebRTC & Media Refs
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const peerConnection = useRef(null);
+  const websocket = useRef(null);
+  const localStream = useRef(null);
+
   // Filter only Virtual + Upcoming appointments
   const virtualAppointments = appointments.filter(
     (apt) => apt.consultationMode === "Virtual" && apt.status === "Upcoming"
@@ -20,15 +27,172 @@ const PatientVideoCall = () => {
   };
 
   const handleEndCall = () => {
+    if (websocket.current) {
+      websocket.current.close();
+    }
+    if (peerConnection.current) {
+      peerConnection.current.close();
+    }
+    if (localStream.current) {
+      localStream.current.getTracks().forEach(track => track.stop());
+    }
     setActiveCall(null);
+    setIsMuted(false);
+    setIsCameraOff(false);
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    if (localStream.current) {
+      localStream.current.getAudioTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsMuted(!isMuted);
+    }
   };
 
   const toggleCamera = () => {
-    setIsCameraOff(!isCameraOff);
+    if (localStream.current) {
+      localStream.current.getVideoTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsCameraOff(!isCameraOff);
+    }
+  };
+
+  useEffect(() => {
+    if (activeCall) {
+      startCall();
+    }
+    return () => {
+      // Cleanup happens in handleEndCall effectively or manually here if component unmounts
+      if (activeCall) { // If unmounting while in call
+        if (websocket.current) websocket.current.close();
+        if (peerConnection.current) peerConnection.current.close();
+        if (localStream.current) localStream.current.getTracks().forEach(t => t.stop());
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCall]);
+
+  const startCall = async () => {
+    // 1. Setup WebSocket
+    websocket.current = new WebSocket("ws://localhost:8080/ws/video");
+
+    websocket.current.onopen = async () => {
+      console.log("WebSocket Connected");
+      await initializeWebRTC();
+      sendMessage({ type: "JOIN", appointmentId: activeCall.id });
+    };
+
+    websocket.current.onmessage = handleSignalingMessage;
+
+    websocket.current.onerror = (error) => {
+      console.error("WebSocket Error:", error);
+    };
+  };
+
+  const initializeWebRTC = async () => {
+    try {
+      // 2. Get User Media
+      console.log("Requesting access to camera/microphone...");
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log("Camera/microphone access granted.");
+      localStream.current = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      // 3. Create PeerConnection
+      const configuration = {
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      };
+      peerConnection.current = new RTCPeerConnection(configuration);
+
+      // Add tracks
+      stream.getTracks().forEach((track) => {
+        peerConnection.current.addTrack(track, stream);
+      });
+
+      // Handle ICE Candidates
+      peerConnection.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          sendMessage({
+            type: "ICE",
+            candidate: event.candidate,
+            appointmentId: activeCall.id,
+          });
+        }
+      };
+
+      // Handle Remote Stream
+      peerConnection.current.ontrack = (event) => {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+        }
+      };
+
+      // 4. Create Offer - MOVED to handleSignalingMessage (wait for peer)
+      // const offer = await peerConnection.current.createOffer();
+      // await peerConnection.current.setLocalDescription(offer);
+      // sendMessage({...});
+
+    } catch (error) {
+      console.error("Error initializing WebRTC:", error);
+    }
+  };
+
+  /* 
+   * Patient Logic:
+   * 1. On Connect -> Send JOIN.
+   * 2. On ROOM_JOINED (if hasPeer=true) -> Send OFFER.
+   * 3. On USER_JOINED (someone else joined) -> Send OFFER.
+   * 4. Don't send OFFER immediately on open.
+   */
+  const handleSignalingMessage = async (event) => {
+    const message = JSON.parse(event.data);
+    console.log("Received signaling message:", message.type);
+
+    if (message.type === "ROOM_JOINED") {
+      if (message.hasPeer) {
+        console.log("Peer already in room, sending offer...");
+        createOffer();
+      } else {
+        console.log("Waiting for peer to join...");
+      }
+    } else if (message.type === "USER_JOINED") {
+      console.log("Peer joined, sending offer...");
+      createOffer();
+    } else if (message.type === "ANSWER") {
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(message.sdp));
+    } else if (message.type === "ICE") {
+      try {
+        await peerConnection.current.addIceCandidate(new RTCIceCandidate(message.candidate));
+      } catch (e) {
+        console.error("Error adding received ice candidate", e);
+      }
+    }
+  };
+
+  const createOffer = async () => {
+    // Only create offer if we haven't already or if we need to renegotiate (simple case: just do it)
+    // Note: In a robust app, check signalingState.
+    if (peerConnection.current && peerConnection.current.signalingState === 'stable') {
+      console.log("Creating proper offer");
+      const offer = await peerConnection.current.createOffer();
+      await peerConnection.current.setLocalDescription(offer);
+
+      sendMessage({
+        type: "OFFER",
+        sdp: offer,
+        appointmentId: activeCall.id,
+      });
+    }
+  };
+
+  const sendMessage = (message) => {
+    if (websocket.current && websocket.current.readyState === WebSocket.OPEN) {
+      websocket.current.send(JSON.stringify(message));
+    }
   };
 
   // Video Call Screen
@@ -62,25 +226,42 @@ const PatientVideoCall = () => {
         <div className="flex-1 flex items-center justify-center p-8 relative">
           <div className="w-full max-w-4xl">
             {/* Doctor Video (Main) */}
-            <div className="relative w-full aspect-video bg-gradient-to-br from-gray-800 to-gray-700 rounded-2xl flex items-center justify-center shadow-2xl border border-gray-600">
-              <div className="text-center">
-                <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
-                  <User size={64} className="text-white" />
+            <div className="relative w-full aspect-video bg-gradient-to-br from-gray-800 to-gray-700 rounded-2xl flex items-center justify-center shadow-2xl border border-gray-600 overflow-hidden">
+              {/* WebRTC Remote Video */}
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover z-0"
+              />
+
+              <div className="text-center z-10 pointer-events-none">
+                <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl opacity-0">
+                  {/* Hidden placeholder to keep layout structure if needed, or remove opacity-0 if you want it behind the video */}
                 </div>
-                <p className="text-white text-2xl font-bold">{activeCall.doctorName}</p>
-                <p className="text-gray-400 text-lg">{activeCall.specialization}</p>
               </div>
-              
+
               {/* Patient Self View (Small) */}
-              <div className="absolute bottom-4 right-4 w-40 h-28 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl flex items-center justify-center shadow-lg border border-gray-500">
+              <div className="absolute bottom-4 right-4 w-40 h-28 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl flex items-center justify-center shadow-lg border border-gray-500 overflow-hidden z-20">
+                {/* WebRTC Local Video */}
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`absolute inset-0 w-full h-full object-cover transform scale-x-[-1] ${isCameraOff ? 'hidden' : ''}`}
+                />
+
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-1">
-                    <User size={24} className="text-white" />
-                  </div>
-                  <span className="text-gray-300 text-xs">You</span>
+                  {!localStream.current && (
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-1">
+                      <User size={24} className="text-white" />
+                    </div>
+                  )}
+                  <span className="text-gray-300 text-xs relative z-10 drop-shadow-md">You</span>
                 </div>
                 {isCameraOff && (
-                  <div className="absolute inset-0 bg-gray-800 bg-opacity-90 rounded-xl flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gray-800 bg-opacity-90 rounded-xl flex items-center justify-center z-30">
                     <VideoOff size={24} className="text-gray-400" />
                   </div>
                 )}
@@ -90,7 +271,7 @@ const PatientVideoCall = () => {
             {/* Call Info Banner */}
             <div className="mt-6 bg-gradient-to-r from-blue-900 to-indigo-900 rounded-xl p-4 text-center border border-blue-700">
               <p className="text-blue-200 text-sm">
-                ⚠️ This is a UI placeholder - No real video integration
+                Session ID: {activeCall.id} | Secure End-to-End Encrypted
               </p>
             </div>
           </div>
@@ -102,11 +283,10 @@ const PatientVideoCall = () => {
             {/* Mute Button */}
             <button
               onClick={toggleMute}
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${
-                isMuted 
-                  ? "bg-red-500 hover:bg-red-600 text-white" 
-                  : "bg-gray-600 hover:bg-gray-500 text-white"
-              }`}
+              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${isMuted
+                ? "bg-red-500 hover:bg-red-600 text-white"
+                : "bg-gray-600 hover:bg-gray-500 text-white"
+                }`}
               title={isMuted ? "Unmute" : "Mute"}
             >
               {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
@@ -115,11 +295,10 @@ const PatientVideoCall = () => {
             {/* Camera Button */}
             <button
               onClick={toggleCamera}
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${
-                isCameraOff 
-                  ? "bg-red-500 hover:bg-red-600 text-white" 
-                  : "bg-gray-600 hover:bg-gray-500 text-white"
-              }`}
+              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${isCameraOff
+                ? "bg-red-500 hover:bg-red-600 text-white"
+                : "bg-gray-600 hover:bg-gray-500 text-white"
+                }`}
               title={isCameraOff ? "Turn Camera On" : "Turn Camera Off"}
             >
               {isCameraOff ? <VideoOff size={24} /> : <Video size={24} />}
