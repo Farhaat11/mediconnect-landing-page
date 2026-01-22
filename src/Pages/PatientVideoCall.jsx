@@ -3,6 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { Video, Phone, ArrowLeft, Clock, User, Mic, MicOff, VideoOff, Calendar } from "lucide-react";
 import { useAppointments } from "../Context/AppointmentContext";
 
+/**
+ * Patient's video call interface for virtual consultations.
+ * WebRTC Flow:
+ * 1. Join room via WebSocket
+ * 2. Initialize camera/microphone
+ * 3. Create and send OFFER when peer (doctor) joins
+ * 4. Receive ANSWER from doctor
+ * 5. Exchange ICE candidates for connection
+ */
 const PatientVideoCall = () => {
   const navigate = useNavigate();
   const { appointments } = useAppointments();
@@ -26,6 +35,7 @@ const PatientVideoCall = () => {
     setActiveCall(appointment);
   };
 
+  // Cleanup: Close connections and stop media tracks
   const handleEndCall = () => {
     if (websocket.current) {
       websocket.current.close();
@@ -64,8 +74,8 @@ const PatientVideoCall = () => {
       startCall();
     }
     return () => {
-      // Cleanup happens in handleEndCall effectively or manually here if component unmounts
-      if (activeCall) { // If unmounting while in call
+      // Cleanup on component unmount
+      if (activeCall) {
         if (websocket.current) websocket.current.close();
         if (peerConnection.current) peerConnection.current.close();
         if (localStream.current) localStream.current.getTracks().forEach(t => t.stop());
@@ -75,7 +85,7 @@ const PatientVideoCall = () => {
   }, [activeCall]);
 
   const startCall = async () => {
-    // 1. Setup WebSocket
+    // 1. Setup WebSocket connection to signaling server
     websocket.current = new WebSocket("ws://localhost:8080/ws/video");
 
     websocket.current.onopen = async () => {
@@ -93,7 +103,7 @@ const PatientVideoCall = () => {
 
   const initializeWebRTC = async () => {
     try {
-      // 2. Get User Media
+      // 2. Request access to camera and microphone
       console.log("Requesting access to camera/microphone...");
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       console.log("Camera/microphone access granted.");
@@ -102,18 +112,18 @@ const PatientVideoCall = () => {
         localVideoRef.current.srcObject = stream;
       }
 
-      // 3. Create PeerConnection
+      // 3. Create RTCPeerConnection with STUN server for NAT traversal
       const configuration = {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       };
       peerConnection.current = new RTCPeerConnection(configuration);
 
-      // Add tracks
+      // Add local media tracks to peer connection
       stream.getTracks().forEach((track) => {
         peerConnection.current.addTrack(track, stream);
       });
 
-      // Handle ICE Candidates
+      // Send ICE candidates to peer via signaling server
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) {
           sendMessage({
@@ -124,17 +134,12 @@ const PatientVideoCall = () => {
         }
       };
 
-      // Handle Remote Stream
+      // Display remote video when received
       peerConnection.current.ontrack = (event) => {
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
-
-      // 4. Create Offer - MOVED to handleSignalingMessage (wait for peer)
-      // const offer = await peerConnection.current.createOffer();
-      // await peerConnection.current.setLocalDescription(offer);
-      // sendMessage({...});
 
     } catch (error) {
       console.error("Error initializing WebRTC:", error);
@@ -142,11 +147,9 @@ const PatientVideoCall = () => {
   };
 
   /* 
-   * Patient Logic:
-   * 1. On Connect -> Send JOIN.
-   * 2. On ROOM_JOINED (if hasPeer=true) -> Send OFFER.
-   * 3. On USER_JOINED (someone else joined) -> Send OFFER.
-   * 4. Don't send OFFER immediately on open.
+   * Patient initiates the WebRTC connection (caller).
+   * Creates OFFER when doctor joins the room.
+   * Waits for ANSWER from doctor to complete connection setup.
    */
   const handleSignalingMessage = async (event) => {
     const message = JSON.parse(event.data);
@@ -173,9 +176,9 @@ const PatientVideoCall = () => {
     }
   };
 
+  // Patient creates the initial OFFER to start WebRTC negotiation
   const createOffer = async () => {
-    // Only create offer if we haven't already or if we need to renegotiate (simple case: just do it)
-    // Note: In a robust app, check signalingState.
+    // Check if connection is in stable state before creating offer
     if (peerConnection.current && peerConnection.current.signalingState === 'stable') {
       console.log("Creating proper offer");
       const offer = await peerConnection.current.createOffer();

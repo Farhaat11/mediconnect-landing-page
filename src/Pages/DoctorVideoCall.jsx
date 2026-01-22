@@ -3,6 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { Video, Phone, ArrowLeft, Clock, User, Mic, MicOff, VideoOff, Calendar, CheckCircle } from "lucide-react";
 import { useAppointments } from "../Context/AppointmentContext";
 
+/**
+ * Doctor's video call interface for virtual consultations.
+ * WebRTC Flow:
+ * 1. Join room via WebSocket
+ * 2. Initialize camera/microphone
+ * 3. Wait for patient's OFFER
+ * 4. Respond with ANSWER
+ * 5. Exchange ICE candidates for connection
+ */
 const DoctorVideoCall = () => {
   const navigate = useNavigate();
   const { appointments, completeAppointment } = useAppointments();
@@ -26,6 +35,7 @@ const DoctorVideoCall = () => {
     setActiveCall(appointment);
   };
 
+  // Cleanup: Close connections and stop media tracks
   const handleEndCall = () => {
     if (websocket.current) {
       websocket.current.close();
@@ -71,7 +81,7 @@ const DoctorVideoCall = () => {
       startCall();
     }
     return () => {
-      // Cleanup happens in handleEndCall effectively or manually here if component unmounts
+      // Cleanup on component unmount
       if (activeCall) {
         if (websocket.current) websocket.current.close();
         if (peerConnection.current) peerConnection.current.close();
@@ -82,7 +92,7 @@ const DoctorVideoCall = () => {
   }, [activeCall]);
 
   const startCall = async () => {
-    // 1. Setup WebSocket
+    // 1. Setup WebSocket connection to signaling server
     websocket.current = new WebSocket("ws://localhost:8080/ws/video");
 
     websocket.current.onopen = async () => {
@@ -100,25 +110,25 @@ const DoctorVideoCall = () => {
 
   const initializeWebRTC = async () => {
     try {
-      // 2. Get User Media
+      // 2. Request access to camera and microphone
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStream.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
 
-      // 3. Create PeerConnection
+      // 3. Create RTCPeerConnection with STUN server for NAT traversal
       const configuration = {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       };
       peerConnection.current = new RTCPeerConnection(configuration);
 
-      // Add tracks
+      // Add local media tracks to peer connection
       stream.getTracks().forEach((track) => {
         peerConnection.current.addTrack(track, stream);
       });
 
-      // Handle ICE Candidates
+      // Send ICE candidates to peer via signaling server
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) {
           sendMessage({
@@ -129,7 +139,7 @@ const DoctorVideoCall = () => {
         }
       };
 
-      // Handle Remote Stream
+      // Display remote video when received
       peerConnection.current.ontrack = (event) => {
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
@@ -141,12 +151,13 @@ const DoctorVideoCall = () => {
     }
   };
 
+  // Doctor receives OFFER from patient and responds with ANSWER
   const handleSignalingMessage = async (event) => {
     const message = JSON.parse(event.data);
     console.log("Doctor received signaling message:", message.type);
 
     if (message.type === "OFFER") {
-      // 4. Handle Offer (Doctor is Callee)
+      // 4. Handle Offer (Doctor is answerer in this flow)
       try {
         await peerConnection.current.setRemoteDescription(new RTCSessionDescription(message.sdp));
         const answer = await peerConnection.current.createAnswer();
